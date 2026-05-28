@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rắn Săn Mồi Speed Online</title>
+    <style>
+        /* Tối ưu hóa nền trang web để ôm sát khung game */
+        body {
+            background-color: #06060a;
+            margin: 0;
+            padding: 20px 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<div style="text-align:center;font-family:sans-serif;background:#0f0f1a;padding:15px;border-radius:20px;max-width:400px;width:100%;margin:0 auto;color:#fff;box-shadow:0 20px 50px rgba(0,0,0,0.7);position:relative;user-select: none;-webkit-user-select:none;touch-action:manipulation;box-sizing:border-box;">
+    <h3 style="margin:0 0 10px 0;color:#00f2fe;letter-spacing:2px;font-size:20px;">RẮN SĂN MỒI SPEED</h3>
+    
+    <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px;background:rgba(255,255,255,0.03);padding:8px;border-radius:8px;align-items:center;">
+        <div>👤 <span id="pN">-</span> | 🏆 ĐIỂM: <span id="sc" style="color:#ffd700">0</span></div>
+        <div id="status-effect" style="font-size:11px;color:#ff9f43;font-weight:bold;display:none;">🌶️ TĂNG TỐC: 5s</div>
+        <button id="ex" onclick="exitMenu()" style="display:none;background:none;border:1px solid #ff4757;color:#ff4757;border-radius:6px;font-size:10px;padding:2px 8px;cursor:pointer;">THOÁT</button>
+    </div>
+
+    <div style="position:relative;width:100%;max-width:400px;aspect-ratio: 1/1;margin:0 auto;">
+        <canvas id="g" width="400" height="400" style="width:100%;height:100%;border:2px solid #1f1f38;border-radius:12px;background:#0b0b11;display:block;box-sizing:border-box;"></canvas>
+        
+        <div id="mn" style="position:absolute;inset:0;background:rgba(11,11,17,0.95);backdrop-filter:blur(4px);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:10px;">
+            <input type="text" id="uI" placeholder="Biệt danh" maxlength="12" style="padding:8px 12px;border-radius:20px;border:1px solid #323254;background:#161624;color:#fff;text-align:center;outline:none;font-size:16px;">
+            <div style="display:flex;gap:8px;">
+                <button onclick="play(140)" style="background:#2ecc71;color:#fff;border:none;padding:8px 16px;border-radius:15px;cursor:pointer;font-weight:bold;font-size:14px;">CHẬM</button>
+                <button onclick="play(90)" style="background:#3498db;color:#fff;border:none;padding:8px 16px;border-radius:15px;cursor:pointer;font-weight:bold;font-size:14px;">VỪA</button>
+                <button onclick="play(50)" style="background:#e74c3c;color:#fff;border:none;padding:8px 16px;border-radius:15px;cursor:pointer;font-weight:bold;font-size:14px;">NHANH</button>
+            </div>
+            <div id="bd" style="width:80%;max-width:240px;background:rgba(255,255,255,0.02);padding:10px;border-radius:12px;font-size:12px;text-align:left;line-height:1.4;">
+                <div style="text-align:center;color:#aaa;">Đang kết nối...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mobile-ctrl" style="margin-top:20px;display:none;flex-direction:column;align-items:center;gap:8px;">
+        <button onclick="press('U')" style="width:70px;height:58px;background:#1f1f38;border:2px solid #00f2fe;color:#00f2fe;border-radius:12px;font-size:22px;font-weight:bold;box-shadow:0 0 15px rgba(0,242,254,0.25);outline:none;">▲</button>
+        <div style="display:flex;gap:45px;">
+            <button onclick="press('L')" style="width:70px;height:58px;background:#1f1f38;border:2px solid #00f2fe;color:#00f2fe;border-radius:12px;font-size:22px;font-weight:bold;box-shadow:0 0 15px rgba(0,242,254,0.25);outline:none;">◀</button>
+            <button onclick="press('R')" style="width:70px;height:58px;background:#1f1f38;border:2px solid #00f2fe;color:#00f2fe;border-radius:12px;font-size:22px;font-weight:bold;box-shadow:0 0 15px rgba(0,242,254,0.25);outline:none;">▶</button>
+        </div>
+        <button onclick="press('D')" style="width:70px;height:58px;background:#1f1f38;border:2px solid #00f2fe;color:#00f2fe;border-radius:12px;font-size:22px;font-weight:bold;box-shadow:0 0 15px rgba(0,242,254,0.25);outline:none;">▼</button>
+    </div>
+</div>
+
+<script>
+const FIREBASE_URL = "https://snake-1eb01-default-rtdb.asia-southeast1.firebasedatabase.app/"; 
+
+const canvas=document.getElementById("g"),ctx=canvas.getContext("2d"),box=20,keys={37:"L",65:"L",38:"U",87:"U",39:"R",68:"R",40:"D",83:"D"};
+let snake,food,score,d,currentD,loop,user="Player", useOnline = true;
+
+let baseSpeed = 100; 
+let speedTimer = null;
+let speedTimeLeft = 0;
+let isSpeedUp = false;
+
+if(localStorage.getItem("lP")) uI.value=localStorage.getItem("lP");
+
+if (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) {
+    document.getElementById("mobile-ctrl").style.display = "flex";
+}
+
+document.body.addEventListener("touchmove", function(e) {
+    if(e.target === canvas || e.target.closest("#mobile-ctrl")) e.preventDefault();
+}, { passive: false });
+
+function init(){
+    snake=[{x:9*box,y:10*box}];
+    score=0; d=""; currentD=""; sc.innerText=0;
+    isSpeedUp = false;
+    speedTimeLeft = 0;
+    document.getElementById("status-effect").style.display = "none";
+    if(speedTimer) clearInterval(speedTimer);
+    genFood();
+    drawGrid();
+    showBoard();
+}
+
+function genFood(){
+    food={ x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box, type: "normal" };
+    if(snake.some(s=>s.x===food.x&&s.y===food.y)) { genFood(); return; }
+    let rand = Math.random() * 100;
+    if(rand < 5) { food.type = "shrink"; } 
+    else if(rand < 15) { food.type = "speed"; } 
+    else if(rand < 30) { food.type = "gold"; }
+}
+
+function showOfflineBoard(title = "TOP KỶ LỤC (OFFLINE)") {
+    let l=JSON.parse(localStorage.getItem("sB"))||[];
+    l.sort((a,b)=>b.score-a.score);
+    bd.innerHTML=`<b style='color:#eccc68'>🥇 ${title}:</b>`+(l.length?l.slice(0,3).map((u,i)=>`<div style="display:flex;justify-content:space-between"><span>${i+1}. ${u.name}</span><b style="color:#00f2fe">${u.score}</b></div>`).join(''):"<div>Chưa có kỷ lục</div>");
+}
+
+function showBoard(){
+    if(!useOnline) { showOfflineBoard(); return; }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => { controller.abort(); useOnline = false; showOfflineBoard("TOP KỶ LỤC (LOCAL)"); }, 1500);
+
+    fetch(`${FIREBASE_URL}/scores.json`, { signal: controller.signal })
+    .then(res => { if(!res.ok) throw new Error(); return res.json(); })
+    .then(data => {
+        clearTimeout(timeoutId);
+        let l = data ? Object.values(data) : [];
+        l.sort((a,b)=>b.score-a.score);
+        bd.innerHTML="<b style='color:#eccc68'>🥇 TOP KỶ LỤC TOÀN CẦU:</b>"+(l.length?l.slice(0,3).map((u,i)=>`<div style="display:flex;justify-content:space-between"><span>${i+1}. ${u.name}</span><b style="color:#00f2fe">${u.score}</b></div>`).join(''):"<div>Chưa có kỷ lục</div>");
+    })
+    .catch(() => { clearTimeout(timeoutId); showOfflineBoard("TOP KỶ LỤC (OFFLINE)"); });
+}
+
+function saveScoreToServer(name, score) {
+    let l=JSON.parse(localStorage.getItem("sB"))||[];
+    l.push({name:name,score:score});
+    localStorage.setItem("sB",JSON.stringify(l));
+    if(!useOnline) { showBoard(); return; }
+
+    fetch(`${FIREBASE_URL}/scores.json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, score: score, timestamp: Date.now() })
+    }).then(() => showBoard()).catch(() => showBoard());
+}
+
+function changeDirection(n) {
+    if((n==="L"&&currentD!=="R")||(n==="U"&&currentD!=="D")||(n==="R"&&currentD!=="L")||(n==="D"&&currentD!=="U")||currentD===""){ d=n; }
+}
+
+function press(dir) { changeDirection(dir); }
+
+document.addEventListener("keydown",e=>{
+    if(document.activeElement===uI) return;
+    if(keys[e.keyCode]){ e.preventDefault(); changeDirection(keys[e.keyCode]); }
+});
+
+function play(s) {
+    baseSpeed = s;
+    user=uI.value.trim()||"Vô danh";
+    localStorage.setItem("lP",user);
+    pN.innerText=user;
+    init();
+    mn.style.display="none";
+    ex.style.display="block";
+    resetGameLoop(baseSpeed);
+}
+
+function resetGameLoop(msSpeed) {
+    if(loop) clearInterval(loop);
+    loop = setInterval(draw, msSpeed);
+}
+
+function exitMenu(){
+    if(speedTimer) clearInterval(speedTimer);
+    clearInterval(loop);
+    mn.style.display="flex";
+    ex.style.display="none";
+    init();
+}
+
+function drawGrid(){
+    ctx.fillStyle="#0b0b11"; ctx.fillRect(0,0,400,400);
+    ctx.strokeStyle="rgba(255,255,255,0.01)";
+    for(let i=0; i<400; i+=box){ ctx.strokeRect(i,0,box,400); ctx.strokeRect(0,i,400,box); }
+}
+
+function fRect(x,y,w,h,r,c){
+    ctx.fillStyle=c; ctx.beginPath();
+    ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h); ctx.fill();
+}
+
+function draw(){
+    let hX=snake[0].x,hY=snake[0].y;
+    if(d==="L") hX-=box; if(d==="U") hY-=box; if(d==="R") hX+=box; if(d==="D") hY+=box;
+    currentD=d; let nH={x:hX,y:hY};
+    
+    if(d!==""){
+        if(hX<0||hX>=400||hY<0||hY>=400||snake.some((s,i)=>i>0&&s.x===hX&&s.y===hY)){
+            clearInterval(loop);
+            if(speedTimer) clearInterval(speedTimer);
+            fRect(snake[0].x,snake[0].y,box,box,8,"#d63031");
+            if(score>0) saveScoreToServer(user, score);
+            setTimeout(()=>{ alert(`💀 GAME OVER!\n${user}: ${score} điểm.`); exitMenu(); },100);
+            return;
+        }
+        
+        if(hX===food.x && hY===food.y){
+            if(food.type === "gold") { score += 3; } 
+            else if(food.type === "speed") {
+                score += 1; isSpeedUp = true; speedTimeLeft = 5;
+                document.getElementById("status-effect").style.display = "block";
+                document.getElementById("status-effect").innerText = `🌶️ TĂNG TỐC: ${speedTimeLeft}s`;
+                resetGameLoop(baseSpeed * 0.7);
+                if(speedTimer) clearInterval(speedTimer);
+                speedTimer = setInterval(() => {
+                    speedTimeLeft--;
+                    if(speedTimeLeft <= 0) {
+                        clearInterval(speedTimer); isSpeedUp = false;
+                        document.getElementById("status-effect").style.display = "none";
+                        resetGameLoop(baseSpeed);
+                    } else { document.getElementById("status-effect").innerText = `🌶️ TĂNG TỐC: ${speedTimeLeft}s`; }
+                }, 1000);
+            } else if(food.type === "shrink") {
+                score += 1; if(snake.length > 4) { snake.splice(-3); }
+            } else { score += 1; }
+            sc.innerText=score; genFood();
+        } else { snake.pop(); }
+        snake.unshift(nH);
+    }
+    
+    drawGrid();
+    let cx=food.x+10, cy=food.y+10;
+    let colorPrimary = "#e74c3c", colorGlow = "#ff7675", leafColor = "#2ecc71";
+    if(food.type === "gold") { colorPrimary = "#ffd700"; colorGlow = "#fff200"; leafColor = "#f1c40f"; } 
+    else if(food.type === "speed") { colorPrimary = "#e67e22"; colorGlow = "#f39c12"; leafColor = "#d35400"; } 
+    else if(food.type === "shrink") { colorPrimary = "#9b59b6"; colorGlow = "#8e44ad"; leafColor = "#2ecc71"; }
+
+    ctx.fillStyle=leafColor; ctx.beginPath(); ctx.ellipse(cx+2,cy-9,3,1.5,Math.PI/4,0,7); ctx.fill();
+    ctx.strokeStyle=colorGlow; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(cx,cy-2); ctx.quadraticCurveTo(cx+2,cy-10,cx+3,cy-11); ctx.stroke();
+    let g=ctx.createRadialGradient(cx-3,cy-3,1,cx,cy,8); g.addColorStop(0, colorGlow); g.addColorStop(1, colorPrimary);
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,8,0,7); ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,0.4)"; ctx.beginPath(); ctx.arc(cx-2,cy-2,2,0,7); ctx.fill();
+    
+    snake.forEach((s,i)=>{
+        if(i===0){
+            fRect(s.x,s.y,box,box,8, isSpeedUp ? "#ff9f43" : "#00f2fe");
+            let elX=s.x+6, elY=s.y+6, erX=s.x+14, erY=s.y+14, lX=0, lY=0;
+            if(d==="L") { elX=s.x+5; elY=s.y+6; erX=s.x+5; erY=s.y+14; lX=-1; }
+            else if(d==="R") { elX=s.x+15; elY=s.y+6; erX=s.x+15; erY=s.y+14; lX=1; }
+            else if(d==='U') { elX=s.x+6; elY=s.y+5; erX=s.x+14; erY=s.y+5; lY=-1; }
+            else if(d==="D") { elX=s.x+6; elY=s.y+15; erX=s.x+14; erY=s.y+15; lY=1; }
+            else { elX=s.x+6; elY=s.y+6; erX=s.x+14; erY=s.y+6; }
+            ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(elX,elY,3,0,7); ctx.fill(); ctx.beginPath(); ctx.arc(erX,erY,3,0,7); ctx.fill();
+            ctx.fillStyle="#111116"; ctx.beginPath(); ctx.arc(elX+lX,elY+lY,1.5,0,7); ctx.fill(); ctx.beginPath(); ctx.arc(erX+lX,erY+lY,1.5,0,7); ctx.fill();
+        } else { 
+            let hue = isSpeedUp ? (20 + (i*5)%25) : 185; 
+            let light = isSpeedUp ? `${50 + (i*4)%25}%` : `${55-(i*2)%20}%`;
+            fRect(s.x+1.5,s.y+1.5,box-3,box-3,5,`hsl(${hue}, 100%, ${light})`); 
+        }
+    });
+}
+init();
+</script>
+</body>
+</html>
