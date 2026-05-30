@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rắn Săn Mồi Hardcore - Level Up</title>
+    <title>Rắn Săn Mồi Hardcore - Fixed</title>
     <style>
         body {
             background-color: #06060a;
@@ -69,15 +69,6 @@
             border-radius: 50%;
             flex-shrink: 0;
         }
-        /* Hiệu ứng nhấp nháy đèn Neon khi tường được phép xuyên qua */
-        @keyframes wallGlow {
-            0% { border-color: #1f1f38; box-shadow: none; }
-            50% { border-color: #00f2fe; box-shadow: 0 0 15px rgba(0,242,254,0.6); }
-            100% { border-color: #1f1f38; box-shadow: none; }
-        }
-        .wrap-active {
-            animation: wallGlow 2s infinite;
-        }
     </style>
 </head>
 <body>
@@ -87,17 +78,17 @@
     <div class="main-box">
         <h3 style="margin:0 0 10px 0;color:#00f2fe;letter-spacing:2px;font-size:18px;">RẮN SĂN MỒI HARDCORE</h3>
         
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:12px; background:rgba(255,255,255,0.03); padding:8px; border-radius:8px; align-items:center; flex-wrap:wrap; gap:5px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:12px; background:rgba(255,255,255,0.03); padding:8px; border-radius:8px; align-items:center; flex-wrap:wrap; gap:5px; min-height:45px; box-sizing:border-box;">
             <div>👤 <span id="pN">-</span></div>
             <div style="background:#ff9f43; padding:2px 6px; border-radius:5px; font-weight:bold; color:#000;">LV: <span id="lvDisplay">1</span></div>
             <div id="wallModeDisplay" style="color:#ff4757; font-weight:bold;">🧱 TƯỜNG CHẶN</div>
             <div>🏆 ĐIỂM: <span id="sc" style="color:#ffd700">0</span></div>
-            <div id="status-effect" style="font-size:11px; color:#ff9f43; font-weight:bold; display:none; width:100%; text-align:center; margin-top:3px;">🌶️ TĂNG TỐC: 5s</div>
+            <div id="status-effect" style="font-size:11px; color:#ff9f43; font-weight:bold; visibility:hidden; width:100%; text-align:center; height:12px; margin-top:2px;">🌶️ TĂNG TỐC: 5s</div>
             <button id="ex" onclick="exitMenu()" style="display:none; background:none; border:1px solid #ff4757; color:#ff4757; border-radius:6px; font-size:10px; padding:2px 8px; cursor:pointer;">THOÁT</button>
         </div>
 
         <div style="position:relative; width:100%; max-width:460px; aspect-ratio:1/1; margin:0 auto;">
-            <canvas id="g" width="460" height="460" style="width:100%; height:100%; border:2px solid #1f1f38; border-radius:12px; background:#0b0b11; display:block; box-sizing:border-box;"></canvas>
+            <canvas id="g" width="460" height="460" style="width:100%; height:100%; border-radius:12px; background:#0b0b11; display:block; box-sizing:border-box;"></canvas>
             
             <div id="mn" style="position:absolute; inset:0; background:rgba(11,11,17,0.95); backdrop-filter:blur(4px); border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:10px;">
                 <input type="text" id="uI" placeholder="Biệt danh" maxlength="12" style="padding:8px 12px; border-radius:20px; border:1px solid #323254; background:#161624; color:#fff; text-align:center; outline:none; font-size:16px;">
@@ -146,14 +137,13 @@ const FIREBASE_URL = "https://snake-1eb01-default-rtdb.asia-southeast1.firebased
 const canvas=document.getElementById("g"),ctx=canvas.getContext("2d"),box=20,keys={37:"L",65:"L",38:"U",87:"U",39:"R",68:"R",40:"D",83:"D"};
 let snake,food,score,d,currentD,loop,user="Player", useOnline = true;
 
-// Quản lý trạng thái nâng cao
 let baseSpeed = 100;
 let currentSpeed = 100;
 let speedTimer = null, speedTimeLeft = 0, isSpeedUp = false;
 let gameLevel = 1;
-let obstacles = []; // Mảng chứa tọa độ các khối gạch
+let obstacles = []; 
 let gameTimeSeconds = 0;
-let timeInterval = null; // Đo thời gian tăng tốc nền
+let timeInterval = null; 
 
 if(localStorage.getItem("lP")) uI.value=localStorage.getItem("lP");
 
@@ -170,7 +160,7 @@ function init(){
     score=0; d=""; currentD=""; sc.innerText=0;
     isSpeedUp = false; speedTimeLeft = 0;
     gameLevel = 1; obstacles = []; gameTimeSeconds = 0;
-    document.getElementById("status-effect").style.display = "none";
+    document.getElementById("status-effect").style.visibility = "hidden";
     updateLevelUI();
     if(speedTimer) clearInterval(speedTimer);
     if(timeInterval) clearInterval(timeInterval);
@@ -179,32 +169,23 @@ function init(){
     showBoard();
 }
 
-// Cập nhật chế độ chơi dựa trên Level
 function updateLevelUI() {
     document.getElementById("lvDisplay").innerText = gameLevel;
-    // Cấp 2 và Cấp 4 được xuyên tường
     if(gameLevel === 2 || gameLevel === 4) {
         document.getElementById("wallModeDisplay").innerText = "🌀 XUYÊN TƯỜNG";
         document.getElementById("wallModeDisplay").style.color = "#00f2fe";
-        canvas.classList.add("wrap-active");
     } else {
         document.getElementById("wallModeDisplay").innerText = "🧱 TƯỜNG CHẶN";
         document.getElementById("wallModeDisplay").style.color = "#ff4757";
-        canvas.classList.remove("wrap-active");
     }
 }
 
-// Hàm tạo thêm chướng ngại vật gạch khi lên cấp
 function spawnObstacle(size) {
     let ox = Math.floor(Math.random() * (23 - size)) * box;
     let oy = Math.floor(Math.random() * (23 - size)) * box;
-    
-    // Tránh sinh đè lên đầu con rắn hoặc mồi
     if(Math.abs(ox - snake[0].x) < 4*box && Math.abs(oy - snake[0].y) < 4*box) {
         spawnObstacle(size); return;
     }
-    
-    // Lưu toàn bộ các ô nhỏ của khối gạch vào mảng
     for(let i=0; i<size; i++) {
         for(let j=0; j<size; j++) {
             obstacles.push({x: ox + i*box, y: oy + j*box});
@@ -214,7 +195,6 @@ function spawnObstacle(size) {
 
 function genFood(){
     food={ x: Math.floor(Math.random()*23)*box, y: Math.floor(Math.random()*23)*box, type: "normal" };
-    // Không sinh mồi đè lên thân rắn hoặc đè lên khối gạch
     if(snake.some(s=>s.x===food.x&&s.y===food.y) || obstacles.some(o=>o.x===food.x&&o.y===food.y)) { genFood(); return; }
     
     let rand = Math.random() * 100;
@@ -279,12 +259,11 @@ function play(s) {
     ex.style.display="block";
     resetGameLoop(currentSpeed);
 
-    // Vòng lặp tính toán thời gian thực: Tăng tốc độ game 5% sau mỗi 30 giây sống sót
     timeInterval = setInterval(() => {
-        if(d !== "") { // Chỉ bắt đầu đếm giờ khi người chơi bắt đầu di chuyển
+        if(d !== "") { 
             gameTimeSeconds += 1;
             if(gameTimeSeconds % 30 === 0) {
-                baseSpeed = baseSpeed * 0.95; // Gia tốc tăng dần nền
+                baseSpeed = baseSpeed * 0.95; 
                 if(!isSpeedUp) {
                     currentSpeed = baseSpeed;
                     resetGameLoop(currentSpeed);
@@ -308,10 +287,22 @@ function exitMenu(){
     init();
 }
 
+// Hàm vẽ lưới nền và tạo viền TĨNH trực tiếp bằng canvas vẽ đè chống giật nhảy khung hình
 function drawGrid(){
     ctx.fillStyle="#0b0b11"; ctx.fillRect(0,0,460,460);
     ctx.strokeStyle="rgba(255,255,255,0.01)";
     for(let i=0; i<460; i+=box){ ctx.strokeRect(i,0,box,460); ctx.strokeRect(0,i,460,box); }
+    
+    // Đổi màu khung viền tĩnh thông minh theo trạng thái của map
+    if(isSpeedUp) {
+        ctx.strokeStyle = "#ff9f43"; // Viền cam lửa khi ăn ớt
+    } else if(gameLevel === 2 || gameLevel === 4) {
+        ctx.strokeStyle = "#00f2fe"; // Viền xanh Neon báo hiệu đang cho xuyên tường
+    } else {
+        ctx.strokeStyle = "#1f1f38"; // Viền tím mặc định
+    }
+    ctx.lineWidth = 4;
+    ctx.strokeRect(0, 0, 460, 460);
 }
 
 function fRect(x,y,w,h,r,c){
@@ -325,7 +316,6 @@ function draw(){
     currentD=d;
     
     if(d!==""){
-        // XỬ LÝ ĐIỀU KIỆN BIÊN (XUYÊN TƯỜNG HOẶC CHẶN TƯỜNG THEO LEVEL)
         if(gameLevel === 2 || gameLevel === 4) {
             if(hX < 0) hX = 440; if(hX >= 460) hX = 0;
             if(hY < 0) hY = 440; if(hY >= 460) hY = 0;
@@ -333,20 +323,18 @@ function draw(){
             if(hX<0||hX>=460||hY<0||hY>=460){ gameOver(); return; }
         }
 
-        // KIỂM TRA ĐÂM ĐUÔI HOẶC ĐÂM KHỐI GẠCH CHƯỚNG NGẠI VẬT
         if(snake.some((s,i)=>i>0&&s.x===hX&&s.y===hY) || obstacles.some(o=>o.x===hX&&o.y===hY)){
             gameOver(); return;
         }
         
         let nH={x:hX, y:hY};
 
-        // XỬ LÝ KHI ĂN MỒI THÀNH CÔNG
         if(hX===food.x && hY===food.y){
-            let prevScore = score;
             if(food.type === "gold") { score += 3; } 
             else if(food.type === "speed") {
                 score += 1; isSpeedUp = true; speedTimeLeft = 5;
-                document.getElementById("status-effect").style.display = "block";
+                // Sử dụng visibility tĩnh thay cho display block để không bóp méo khung giao diện HTML
+                document.getElementById("status-effect").style.visibility = "visible";
                 document.getElementById("status-effect").innerText = `🌶️ TĂNG TỐC: ${speedTimeLeft}s`;
                 resetGameLoop(baseSpeed * 0.7);
                 if(speedTimer) clearInterval(speedTimer);
@@ -354,7 +342,7 @@ function draw(){
                     speedTimeLeft--;
                     if(speedTimeLeft <= 0) {
                         clearInterval(speedTimer); isSpeedUp = false;
-                        document.getElementById("status-effect").style.display = "none";
+                        document.getElementById("status-effect").style.visibility = "hidden";
                         resetGameLoop(baseSpeed);
                     } else { document.getElementById("status-effect").innerText = `🌶️ TĂNG TỐC: ${speedTimeLeft}s`; }
                 }, 1000);
@@ -364,12 +352,10 @@ function draw(){
             
             sc.innerText=score;
 
-            // KIỂM TRA ĐIỀU KIỆN LÊN CẤP ĐỘ (Cứ mỗi 15 điểm lên 1 level, tối đa Lv 5)
             let newLevel = Math.floor(score / 15) + 1;
             if(newLevel > gameLevel && gameLevel < 5) {
                 gameLevel = newLevel;
                 updateLevelUI();
-                // Tùy theo Level mà sinh ra khối gạch kích thước lớn nhỏ khác nhau
                 spawnObstacle(gameLevel === 3 ? 3 : 2); 
             }
 
@@ -380,10 +366,9 @@ function draw(){
         snake.unshift(nH);
     }
     
-    // VẼ BẢN ĐỒ VÀ CHƯỚNG NGẠI VẬT
     drawGrid();
 
-    // Vẽ các khối gạch chướng ngại vật màu xám đỏ cứng cáp
+    // VẼ CHƯỚNG NGẠI VẬT GẠCH
     obstacles.forEach(o => {
         fRect(o.x+1, o.y+1, box-2, box-2, 4, "#57606f");
         fRect(o.x+3, o.y+3, box-6, box-6, 2, "#ff4757");
